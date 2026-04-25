@@ -1,9 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
-import json
+import os
 
 app = Flask(__name__)
 
@@ -22,7 +20,7 @@ def analyze():
         
         sensitive_cols = []
         for col in df.columns:
-            if any(word in col.lower() for word in ['gender', 'race', 'age', 'religion', 'sex']):
+            if any(word in col.lower() for word in ['gender', 'race', 'age', 'religion', 'sex', 'ethnicity']):
                 sensitive_cols.append(col)
         
         for col in sensitive_cols:
@@ -34,8 +32,8 @@ def analyze():
         
         results['sensitive_columns'] = sensitive_cols
         results['bias_report'] = bias_report
-        results['total_rows'] = len(df)
-        results['total_columns'] = len(df.columns)
+        results['total_rows'] = int(len(df))
+        results['total_columns'] = int(len(df.columns))
         results['columns'] = list(df.columns)
         
         return jsonify({'success': True, 'results': results})
@@ -44,4 +42,5 @@ def analyze():
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000, debug=False)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
