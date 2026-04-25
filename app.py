@@ -17,8 +17,8 @@ def analyze():
         
         results = {}
         bias_report = []
-        
         sensitive_cols = []
+        
         for col in df.columns:
             if any(word in col.lower() for word in ['gender', 'race', 'age', 'religion', 'sex', 'ethnicity']):
                 sensitive_cols.append(col)
