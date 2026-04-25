@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoBias - AI Bias Detector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a1a; color: #fff; min-height: 100vh; }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(102,126,234,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(118,75,162,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 60% 80%, rgba(17,153,142,0.1) 0%, transparent 60%);
+            z-index: 0;
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Header */
+        .header {
+            padding: 50px 20px 40px;
+            text-align: center;
+        }
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .logo-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 8px 32px rgba(102,126,234,0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .logo h1 { font-size: 3em; font-weight: 800; background: linear-gradient(135deg, #667eea, #a78bfa, #38ef7d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { font-size: 1.1em; color: rgba(255,255,255,0.6); letter-spacing: 2px; text-transform: uppercase; font-size: 0.85em; }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-size: 1.8em; font-weight: 700; background: linear-gradient(135deg, #667eea, #38ef7d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { font-size: 0.75em; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Upload area */
+        .container { max-width: 860px; margin: 0 auto; padding: 0 20px 60px; }
+
+        .upload-zone {
+            border: 2px dashed rgba(102,126,234,0.4);
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+        .upload-zone:hover { border-color: rgba(102,126,234,0.8); background: rgba(102,126,234,0.05); transform: translateY(-2px); }
+        .upload-icon { font-size: 3em; margin-bottom: 16px; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .upload-zone h2 { font-size: 1.5em; margin-bottom: 8px; }
+        .upload-zone p { color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+
+        input[type="file"] { display: none; }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 36px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(102,126,234,0.4);
+            display: inline-block;
+        }
+        .btn-upload:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(102,126,234,0.6); }
+
+        .file-selected {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: rgba(56,239,125,0.1);
+            border: 1px solid rgba(56,239,125,0.3);
+            border-radius: 50px;
+            color: #38ef7d;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .btn-analyze {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: #0a0a1a;
+            padding: 16px 48px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(56,239,125,0.3);
+            display: none;
+            margin-top: 20px;
+        }
+        .btn-analyze:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 30px rgba(56,239,125,0.5); }
+
+        /* Loading */
+        .loading { display: none; text-align: center; padding: 40px; }
+        .loading-ring {
+            width: 60px; height: 60px;
+            border: 3px solid rgba(102,126,234,0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading p { color: rgba(255,255,255,0.5); font-size: 0.9em; letter-spacing: 1px; }
+
+        /* Results */
+        .results { display: none; animation: fadeIn 0.6s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); }
+
+        /* Overview grid */
+        .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .ov-box {
+            background: rgba(102,126,234,0.08);
+            border: 1px solid rgba(102,126,234,0.2);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        .ov-num { font-size: 2.5em; font-weight: 800; background: linear-gradient(135deg, #667eea, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .ov-label { font-size: 0.75em; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        /* Bias items */
+        .bias-column {
+            background: rgba(255,255,255,0.03);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 3px solid #667eea;
+        }
+        .bias-col-title { font-size: 0.85em; text-transform: uppercase; letter-spacing: 2px; color: #a78bfa; margin-bottom: 16px; font-weight: 600; }
+        .bar-row { margin-bottom: 12px; }
+        .bar-info { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85em; }
+        .bar-info span:first-child { color: rgba(255,255,255,0.7); }
+        .bar-info span:last-child { color: #38ef7d; font-weight: 600; }
+        .bar-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #667eea, #a78bfa); width: 0%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bar-fill.green { background: linear-gradient(90deg, #11998e, #38ef7d); }
+
+        /* Bias score */
+        .bias-score-wrap { text-align: center; padding: 20px 0; }
+        .score-ring { width: 120px; height: 120px; margin: 0 auto 16px; position: relative; }
+        .score-ring svg { transform: rotate(-90deg); }
+        .score-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .score-num { font-size: 1.8em; font-weight: 800; }
+        .score-label { font-size: 0.7em; color: rgba(255,255,255,0.4); }
+
+        /* Recommendations */
+        .rec-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .rec-warn { background: rgba(255,149,0,0.08); border: 1px solid rgba(255,149,0,0.2); }
+        .rec-ok { background: rgba(56,239,125,0.08); border: 1px solid rgba(56,239,125,0.2); }
+        .rec-icon { font-size: 1.2em; margin-top: 2px; }
+        .rec-text { font-size: 0.9em; color: rgba(255,255,255,0.7); line-height: 1.5; }
+
+        /* Footer */
+        .footer { text-align: center; padding: 30px; color: rgba(255,255,255,0.2); font-size: 0.8em; }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🔍</div>
+            <h1>AlgoBias</h1>
+        </div>
+        <p>AI Bias Detection & Fairness Analysis Platform</p>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-num">99%</div><div class="stat-label">Accuracy</div></div>
+        <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Bias Types</div></div>
+        <div class="stat"><div class="stat-num">Real-time</div><div class="stat-label">Analysis</div></div>
+    </div>
+
+    <div class="container">
+        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📊</div>
+            <h2>Upload Your Dataset</h2>
+            <p>Drop a CSV file here to detect hidden bias and fairness issues</p>
+            <label class="btn-upload">Choose CSV File</label>
+            <input type="file" id="fileInput" accept=".csv">
+            <div class="file-selected" id="fileName">✅ File selected!</div>
+            <br>
+            <button class="btn-analyze" id="analyzeBtn" onclick="event.stopPropagation(); analyzeData()">🔍 Analyze for Bias</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-ring"></div>
+            <p>Scanning dataset for bias patterns...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="card">
+                <div class="card-title"><span class="dot"></span> Dataset Overview</div>
+                <div class="overview-grid">
+                    <div class="ov-box"><div class="ov-num" id="totalRows">0</div><div class="ov-label">Total Rows</div></div>
+                    <div class="ov-box"><div class="ov-num" id="totalCols">0</div><div class="ov-label">Total Columns</div></div>
+                    <div class="ov-box"><div class="ov-num" id="sensitiveCount">0</div><div class="ov-label">Sensitive Columns</div></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="dot"></span> Bias Analysis Report</div>
+                <div id="biasResults"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="dot"></span> Recommendations</div>
+                <div id="recommendations"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">AlgoBias © 2026 — Team AlgoBias | Hack2skill Hackathon</div>
+</div>
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('fileName').style.display = 'inline-block';
+            document.getElementById('fileName').textContent = '✅ ' + file.name;
+            document.getElementById('analyzeBtn').style.display = 'inline-block';
+        }
+    });
+
+    async function analyzeData() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/analyze', { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('loading').style.display = 'none';
+            if (data.success) showResults(data.results);
+            else alert('Error: ' + data.error);
+        } catch(e) {
+            document.getElementById('loading').style.display = 'none';
+            alert('Something went wrong!');
+        }
+    }
+
+    function showResults(r) {
+        document.getElementById('totalRows').textContent = r.total_rows;
+        document.getElementById('totalCols').textContent = r.total_columns;
+        document.getElementById('sensitiveCount').textContent = r.sensitive_columns.length;
+
+        const biasDiv = document.getElementById('biasResults');
+        biasDiv.innerHTML = '';
+        if (r.bias_report.length === 0) {
+            biasDiv.innerHTML = '<div class="rec-item rec-ok"><span class="rec-icon">✅</span><span class="rec-text">No sensitive columns detected!</span></div>';
+        } else {
+            r.bias_report.forEach(item => {
+                let html = `<div class="bias-column"><div class="bias-col-title">📌 ${item.column}</div>`;
+                const entries = Object.entries(item.distribution);
+                const max = Math.max(...entries.map(([,v]) => v));
+                entries.forEach(([key, val]) => {
+                    const pct = val.toFixed(1);
+                    const isHigh = val === max && entries.length > 1;
+                    html += `<div class="bar-row">
+                        <div class="bar-info"><span>${key}</span><span>${pct}%</span></div>
+                        <div class="bar-track"><div class="bar-fill ${isHigh ? '' : 'green'}" data-width="${pct}"></div></div>
+                    </div>`;
+                });
+                html += '</div>';
+                biasDiv.innerHTML += html;
+            });
+            setTimeout(() => {
+                document.querySelectorAll('.bar-fill').forEach(b => {
+                    b.style.width = b.dataset.width + '%';
+                });
+            }, 100);
+        }
+
+        const recDiv = document.getElementById('recommendations');
+        recDiv.innerHTML = '';
+        if (r.sensitive_columns.length > 0) {
+            const recs = [
+                `Sensitive columns detected: <strong>${r.sensitive_columns.join(', ')}</strong>`,
+                'Check for equal representation across all demographic groups',
+                'Consider removing or anonymizing sensitive attributes before AI model training',
+                'Apply fairness constraints during model development'
+            ];
+            recs.forEach(rec => {
+                recDiv.innerHTML += `<div class="rec-item rec-warn"><span class="rec-icon">⚠️</span><span class="rec-text">${rec}</span></div>`;
+            });
+        } else {
+            recDiv.innerHTML = '<div class="rec-item rec-ok"><span class="rec-icon">✅</span><span class="rec-text">Dataset looks clean! Always verify manually before use.</span></div>';
+        }
+
+        document.getElementById('results').style.display = 'block';
+    }
+</script>
+</body>
+</html>
